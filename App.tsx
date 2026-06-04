@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -51,6 +53,7 @@ type Settings = {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = 'fertility-tracker:v1';
+const PIN_KEY = 'fertility-tracker:pin';
 const symptoms: Symptom[] = ['Cramps', 'Tender breasts', 'Bloating', 'Headache', 'Fatigue', 'Acne'];
 const flows: Flow[] = ['None', 'Spotting', 'Light', 'Medium', 'Heavy'];
 const moods: Mood[] = ['Calm', 'Happy', 'Sensitive', 'Stressed', 'Low'];
@@ -269,7 +272,13 @@ function createEmptyLog(date = todayISO): DayLog {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [authenticated, setAuthenticated] = useState(true);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
+  const [pinInput, setPinInput] = useState('');
+  const [pinSetupInput, setPinSetupInput] = useState('');
+  const [storedPin, setStoredPin] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings>(defaultSettings);
   const [logs, setLogs] = useState<DayLog[]>(seedLogs);
   const [draftLog, setDraftLog] = useState<DayLog>(() => logs.find((log) => log.date === todayISO) ?? createEmptyLog());
@@ -285,7 +294,8 @@ export default function App() {
             setDraftLog(parsed.logs.find((log) => log.date === todayISO) ?? createEmptyLog());
           }
           if (parsed.settings) {
-            setSettings({ ...defaultSettings, ...parsed.settings });
+            const mergedSettings = { ...defaultSettings, ...parsed.settings };
+            setSettings(mergedSettings);
           }
         }
       } catch {
@@ -299,12 +309,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const loadLockState = async () => {
+      const [compatible, enrolled, savedPin] = await Promise.all([
+        LocalAuthentication.hasHardwareAsync().catch(() => false),
+        LocalAuthentication.isEnrolledAsync().catch(() => false),
+        SecureStore.getItemAsync(PIN_KEY).catch(() => null),
+      ]);
+
+      setBiometricAvailable(compatible && enrolled);
+      setStoredPin(savedPin);
+    };
+
+    void loadLockState();
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) {
       return;
     }
 
     void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ logs, settings }));
   }, [hydrated, logs, settings]);
+
+  useEffect(() => {
+    setAuthenticated(!settings.privacyLock || !storedPin);
+  }, [settings.privacyLock, storedPin]);
 
   const cycle = useMemo(() => {
     const cycleStart = getCycleStart(logs, settings.cycleLength);
@@ -373,6 +402,69 @@ export default function App() {
     void AsyncStorage.removeItem(STORAGE_KEY);
   };
 
+  const savePin = async (pin: string) => {
+    if (pin.length !== 4) {
+      setLockMessage('Enter a 4 digit PIN.');
+      return;
+    }
+
+    await SecureStore.setItemAsync(PIN_KEY, pin);
+    setStoredPin(pin);
+    setPinSetupInput('');
+    setLockMessage('PIN lock is enabled.');
+    setSettings((current) => ({ ...current, privacyLock: true }));
+    setAuthenticated(true);
+  };
+
+  const disablePrivacyLock = async () => {
+    await SecureStore.deleteItemAsync(PIN_KEY);
+    setStoredPin(null);
+    setPinInput('');
+    setPinSetupInput('');
+    setLockMessage('');
+    setSettings((current) => ({ ...current, privacyLock: false }));
+    setAuthenticated(true);
+  };
+
+  const unlockWithPin = () => {
+    if (pinInput === storedPin) {
+      setAuthenticated(true);
+      setPinInput('');
+      setLockMessage('');
+      return;
+    }
+
+    setLockMessage('Incorrect PIN. Try again.');
+  };
+
+  const unlockWithBiometrics = async () => {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Unlock Fertility Tracker',
+      cancelLabel: 'Use PIN',
+      disableDeviceFallback: false,
+    });
+
+    if (result.success) {
+      setAuthenticated(true);
+      setLockMessage('');
+    } else {
+      setLockMessage('Biometric unlock was not completed.');
+    }
+  };
+
+  if (hydrated && settings.privacyLock && storedPin && !authenticated) {
+    return (
+      <LockScreen
+        biometricAvailable={biometricAvailable}
+        message={lockMessage}
+        onBiometricUnlock={unlockWithBiometrics}
+        onPinChange={setPinInput}
+        onPinUnlock={unlockWithPin}
+        pin={pinInput}
+      />
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
@@ -401,7 +493,20 @@ export default function App() {
           )}
           {activeTab === 'calendar' && <CalendarScreen cycle={cycle} settings={settings} />}
           {activeTab === 'insights' && <InsightsScreen logs={sortedLogs} cycle={cycle} settings={settings} />}
-          {activeTab === 'settings' && <SettingsScreen settings={settings} onClearData={clearLocalData} onUpdate={updateSetting} />}
+          {activeTab === 'settings' && (
+            <SettingsScreen
+              biometricAvailable={biometricAvailable}
+              lockMessage={lockMessage}
+              onClearData={clearLocalData}
+              onDisablePrivacyLock={disablePrivacyLock}
+              onPinChange={setPinSetupInput}
+              onSavePin={() => savePin(pinSetupInput)}
+              onUpdate={updateSetting}
+              pin={pinSetupInput}
+              settings={settings}
+              storedPin={storedPin}
+            />
+          )}
         </ScrollView>
 
         <View style={styles.tabBar}>
@@ -683,13 +788,27 @@ function InsightsScreen({ logs, cycle, settings }: { logs: DayLog[]; cycle: Retu
 }
 
 function SettingsScreen({
-  settings,
+  biometricAvailable,
+  lockMessage,
   onClearData,
+  onDisablePrivacyLock,
+  onPinChange,
+  onSavePin,
   onUpdate,
+  pin,
+  settings,
+  storedPin,
 }: {
+  biometricAvailable: boolean;
+  lockMessage: string;
   settings: Settings;
   onClearData: () => void;
+  onDisablePrivacyLock: () => void;
+  onPinChange: (pin: string) => void;
+  onSavePin: () => void;
   onUpdate: <Key extends keyof Settings>(key: Key, value: Settings[Key]) => void;
+  pin: string;
+  storedPin: string | null;
 }) {
   return (
     <View>
@@ -742,7 +861,42 @@ function SettingsScreen({
       <View style={styles.formPanel}>
         <SwitchRow label="Fertile window reminder" value={settings.fertileReminder} onValueChange={(value) => onUpdate('fertileReminder', value)} />
         <SwitchRow label="Period reminder" value={settings.periodReminder} onValueChange={(value) => onUpdate('periodReminder', value)} />
-        <SwitchRow label="Privacy lock preference" value={settings.privacyLock} onValueChange={(value) => onUpdate('privacyLock', value)} />
+      </View>
+
+      <SectionTitle label="Privacy Lock" />
+      <View style={styles.formPanel}>
+        <View style={styles.lockStatusRow}>
+          <View>
+            <Text style={styles.lockStatusTitle}>{settings.privacyLock && storedPin ? 'PIN lock active' : 'PIN lock off'}</Text>
+            <Text style={styles.lockStatusText}>
+              {biometricAvailable ? 'Face ID / biometrics available after PIN setup.' : 'Biometric unlock is not available on this device.'}
+            </Text>
+          </View>
+          <Ionicons name={settings.privacyLock && storedPin ? 'lock-closed-outline' : 'lock-open-outline'} size={22} color="#316960" />
+        </View>
+        <TextInput
+          accessibilityLabel="Set four digit PIN"
+          inputMode="numeric"
+          keyboardType="number-pad"
+          maxLength={4}
+          onChangeText={(value) => onPinChange(value.replace(/\D/g, '').slice(0, 4))}
+          placeholder={storedPin ? 'New 4 digit PIN' : 'Create 4 digit PIN'}
+          placeholderTextColor="#8f8781"
+          secureTextEntry
+          style={styles.input}
+          value={pin}
+        />
+        {!!lockMessage && <Text style={styles.lockMessage}>{lockMessage}</Text>}
+        <View style={styles.actionRow}>
+          <Pressable onPress={onSavePin} style={styles.primaryButton}>
+            <Ionicons name="keypad-outline" size={19} color="#ffffff" />
+            <Text style={styles.primaryButtonText}>{storedPin ? 'Reset PIN' : 'Enable PIN'}</Text>
+          </Pressable>
+          <Pressable onPress={onDisablePrivacyLock} style={styles.secondaryButton}>
+            <Ionicons name="lock-open-outline" size={19} color="#316960" />
+            <Text style={styles.secondaryButtonText}>Disable</Text>
+          </Pressable>
+        </View>
       </View>
 
       <SectionTitle label="Data Control" />
@@ -771,6 +925,58 @@ function buildCycleSummary() {
     nextPeriod: today,
     ovulation: today,
   };
+}
+
+function LockScreen({
+  biometricAvailable,
+  message,
+  onBiometricUnlock,
+  onPinChange,
+  onPinUnlock,
+  pin,
+}: {
+  biometricAvailable: boolean;
+  message: string;
+  onBiometricUnlock: () => void;
+  onPinChange: (pin: string) => void;
+  onPinUnlock: () => void;
+  pin: string;
+}) {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.lockScreen}>
+        <View style={styles.lockIconLarge}>
+          <Ionicons name="lock-closed-outline" size={38} color="#316960" />
+        </View>
+        <Text style={styles.lockTitle}>Fertility Tracker</Text>
+        <Text style={styles.lockSubtitle}>Unlock to view your private cycle data.</Text>
+        <TextInput
+          accessibilityLabel="Enter four digit PIN"
+          inputMode="numeric"
+          keyboardType="number-pad"
+          maxLength={4}
+          onChangeText={(value) => onPinChange(value.replace(/\D/g, '').slice(0, 4))}
+          placeholder="4 digit PIN"
+          placeholderTextColor="#8f8781"
+          secureTextEntry
+          style={styles.lockInput}
+          value={pin}
+        />
+        {!!message && <Text style={styles.lockMessage}>{message}</Text>}
+        <Pressable onPress={onPinUnlock} style={styles.lockPrimaryButton}>
+          <Ionicons name="keypad-outline" size={19} color="#ffffff" />
+          <Text style={styles.primaryButtonText}>Unlock</Text>
+        </Pressable>
+        {biometricAvailable && (
+          <Pressable onPress={onBiometricUnlock} style={styles.lockSecondaryButton}>
+            <Ionicons name="finger-print-outline" size={20} color="#316960" />
+            <Text style={styles.secondaryButtonText}>Use Face ID / biometrics</Text>
+          </Pressable>
+        )}
+      </View>
+    </SafeAreaView>
+  );
 }
 
 function Header({ title, subtitle, icon }: { title: string; subtitle: string; icon: IconName }) {
@@ -936,6 +1142,14 @@ const styles = StyleSheet.create({
   secondaryButtonText: { color: '#316960', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
   dangerButton: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#f0b1a5', borderRadius: 8, borderWidth: 1, flexDirection: 'row', gap: 8, height: 50, justifyContent: 'center' },
   dangerButtonText: { color: '#c5534b', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
+  lockScreen: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 },
+  lockIconLarge: { alignItems: 'center', backgroundColor: '#e0f0ed', borderRadius: 8, height: 76, justifyContent: 'center', marginBottom: 18, width: 76 },
+  lockTitle: { color: '#292725', fontSize: 31, fontWeight: '800', letterSpacing: 0 },
+  lockSubtitle: { color: '#635a54', fontSize: 15, lineHeight: 21, marginBottom: 22, marginTop: 8, maxWidth: 280, textAlign: 'center' },
+  lockInput: { backgroundColor: '#ffffff', borderColor: '#eaded6', borderRadius: 8, borderWidth: 1, color: '#292725', fontSize: 22, fontWeight: '800', height: 54, letterSpacing: 0, marginBottom: 10, paddingHorizontal: 16, textAlign: 'center', width: 220 },
+  lockMessage: { color: '#c5534b', fontSize: 13, fontWeight: '800', marginBottom: 10, textAlign: 'center' },
+  lockPrimaryButton: { alignItems: 'center', backgroundColor: '#c5534b', borderRadius: 8, flexDirection: 'row', gap: 8, height: 50, justifyContent: 'center', marginTop: 4, width: 260 },
+  lockSecondaryButton: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#b8d8d2', borderRadius: 8, borderWidth: 1, flexDirection: 'row', gap: 8, height: 50, justifyContent: 'center', marginTop: 10, width: 260 },
   sectionTitle: { color: '#292725', fontSize: 18, fontWeight: '800', letterSpacing: 0, marginBottom: 10, marginTop: 22 },
   dayRow: { gap: 8, paddingRight: 20 },
   dayCell: { alignItems: 'center', borderRadius: 8, height: 82, justifyContent: 'space-between', paddingVertical: 9, width: 46 },
@@ -997,6 +1211,9 @@ const styles = StyleSheet.create({
   stepperValue: { color: '#292725', fontSize: 17, fontWeight: '800', letterSpacing: 0 },
   switchRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 },
   switchLabel: { color: '#292725', fontSize: 15, fontWeight: '800' },
+  lockStatusRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  lockStatusTitle: { color: '#292725', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
+  lockStatusText: { color: '#71665f', fontSize: 13, fontWeight: '700', lineHeight: 18, marginTop: 3, maxWidth: 420 },
   careTip: { alignItems: 'flex-start', borderBottomColor: '#f0e7df', borderBottomWidth: 1, flexDirection: 'row', gap: 10, paddingBottom: 12, paddingTop: 2 },
   careIcon: { alignItems: 'center', backgroundColor: '#e0f0ed', borderRadius: 8, height: 34, justifyContent: 'center', width: 34 },
   careText: { flex: 1 },

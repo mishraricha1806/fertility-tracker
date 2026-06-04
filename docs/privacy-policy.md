@@ -30,7 +30,9 @@ The app is intended for adults and is not directed to children.
 
 ## Security
 
-The app stores data locally on the device. Before using this app for production health data, consider adding stronger protections such as encrypted storage, biometric lock enforcement, account deletion flows if accounts are introduced, and a reviewed security model.
+The app stores data locally on the device and supports an optional 4 digit PIN lock with Face ID or biometric unlock on supported devices. The PIN is stored in secure device storage. Face ID and biometric verification are handled by the operating system; the app does not receive or store biometric templates.
+
+Before using this app for production health data, consider a reviewed security model and stronger protections if cloud sync or accounts are introduced.
 
 ## Changes
 

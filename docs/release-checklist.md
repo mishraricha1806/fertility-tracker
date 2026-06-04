@@ -33,10 +33,29 @@
 - Build with `npm run build:android`.
 - Submit with `npm run submit:android` to the internal track first.
 
+## Android Upload Commands
+
+Run these from the project folder:
+
+```sh
+npx eas-cli login
+npx eas-cli build:configure
+npm run build:android
+```
+
+When the EAS build finishes, download the `.aab` file from the build link. In Play Console, open the app, go to Testing > Internal testing, create a release, upload the `.aab`, add release notes, review, and roll out to internal testing.
+
+After the first manual upload, you can configure a Google Play service account JSON and use:
+
+```sh
+npm run submit:android
+```
+
 ## Final QA
 
 - Install the production build on a real iPhone and Android phone.
 - Log a day, close the app, reopen it, and verify logs/settings persist.
+- Enable PIN lock, close and reopen the app, verify PIN unlock, and verify Face ID / biometrics on a supported physical device.
 - Verify all tabs fit on small phones.
 - Verify Clear local data removes logs and resets settings.
 - Verify no medical claim implies diagnosis, treatment, or contraception reliability.

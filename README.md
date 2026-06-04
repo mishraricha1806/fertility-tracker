@@ -9,6 +9,7 @@ A cross-platform Expo app for Android and iOS that helps track menstrual cycles,
 - Cycle calendar with period, fertile, ovulation, and regular phases.
 - Insights screen with symptom trends, logged history, BMI category, TTC care prompts, and key fertility stats.
 - Settings for age, trying-to-conceive months, height, weight, prenatal/folic acid status, cycle length, period length, luteal phase, reminders, and privacy lock preference.
+- 4 digit PIN lock with Face ID / biometric unlock on supported devices.
 - Clear local data control for user-managed deletion.
 - Local persistence with AsyncStorage so logs and settings survive app restarts.
 

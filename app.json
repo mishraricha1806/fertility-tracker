@@ -15,7 +15,8 @@
       "bundleIdentifier": "com.richamishra.fertilitytracker",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Use Face ID to unlock your private fertility tracker."
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -45,6 +46,8 @@
     },
     "plugins": [
       "expo-font",
+      "expo-local-authentication",
+      "expo-secure-store",
       [
         "expo-splash-screen",
         {

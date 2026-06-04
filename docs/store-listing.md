@@ -18,6 +18,8 @@ Fertility Tracker helps you understand your menstrual cycle and trying-to-concei
 
 Log period flow, mood, symptoms, cervical mucus, basal body temperature, ovulation tests, pregnancy tests, intercourse, and daily notes. See your current cycle day, next period estimate, fertile window, ovulation estimate, phase calendar, symptom trends, and saved history.
 
+Protect private entries with an optional 4 digit PIN and Face ID or biometric unlock on supported devices.
+
 For trying-to-conceive planning, the app includes BMI category prompts, prenatal or folic acid reminders, cycle-pattern prompts, and timing guidance for when to consider speaking with a clinician.
 
 Fertility Tracker stores entries locally on your device in this version. Predictions and care prompts are educational estimates only and are not medical advice, diagnosis, treatment, contraception, or a substitute for professional care.
@@ -58,5 +60,6 @@ Based on the current app behavior:
 - Data shared: No.
 - Data encrypted in transit: Not applicable because the app does not transmit user-entered logs.
 - Users can request data deletion: Not applicable for server-side data; users can clear local data in app settings, delete app storage, or uninstall the app.
+- Biometric data: Not collected by the developer. Face ID and biometric checks are handled by the operating system.
 
 If any networked feature is added later, update the Data safety form before release.
