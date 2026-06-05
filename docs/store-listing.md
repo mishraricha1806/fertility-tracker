@@ -63,3 +63,7 @@ Based on the current app behavior:
 - Biometric data: Not collected by the developer. Face ID and biometric checks are handled by the operating system.
 
 If any networked feature is added later, update the Data safety form before release.
+
+## Subscription Prototype Note
+
+The in-app Plus screen is currently a prototype. Do not advertise paid subscriptions in the live store listing until Apple in-app purchases and Google Play Billing are connected and approved.

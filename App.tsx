@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
-type Tab = 'home' | 'log' | 'calendar' | 'insights' | 'settings';
+type Tab = 'home' | 'log' | 'calendar' | 'insights' | 'plus' | 'settings';
 type Phase = 'Period' | 'Fertile' | 'Ovulation' | 'Regular';
 type Flow = 'None' | 'Spotting' | 'Light' | 'Medium' | 'Heavy';
 type Mood = 'Calm' | 'Happy' | 'Sensitive' | 'Stressed' | 'Low';
@@ -49,6 +49,7 @@ type Settings = {
   fertileReminder: boolean;
   periodReminder: boolean;
   privacyLock: boolean;
+  plusActive: boolean;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -71,6 +72,7 @@ const defaultSettings: Settings = {
   fertileReminder: true,
   periodReminder: true,
   privacyLock: false,
+  plusActive: false,
 };
 
 const today = new Date();
@@ -481,6 +483,7 @@ export default function App() {
               symptomCount={symptomCount}
               onLogPeriod={logPeriodToday}
               onOpenLog={() => setActiveTab('log')}
+              onOpenPlus={() => setActiveTab('plus')}
             />
           )}
           {activeTab === 'log' && (
@@ -492,7 +495,21 @@ export default function App() {
             />
           )}
           {activeTab === 'calendar' && <CalendarScreen cycle={cycle} settings={settings} />}
-          {activeTab === 'insights' && <InsightsScreen logs={sortedLogs} cycle={cycle} settings={settings} />}
+          {activeTab === 'insights' && (
+            <InsightsScreen
+              logs={sortedLogs}
+              cycle={cycle}
+              settings={settings}
+              onOpenPlus={() => setActiveTab('plus')}
+            />
+          )}
+          {activeTab === 'plus' && (
+            <PlusScreen
+              plusActive={settings.plusActive}
+              onChoosePlan={() => updateSetting('plusActive', true)}
+              onRestore={() => updateSetting('plusActive', true)}
+            />
+          )}
           {activeTab === 'settings' && (
             <SettingsScreen
               biometricAvailable={biometricAvailable}
@@ -514,6 +531,7 @@ export default function App() {
           <TabButton active={activeTab === 'log'} icon="add-circle-outline" label="Log" onPress={() => setActiveTab('log')} />
           <TabButton active={activeTab === 'calendar'} icon="calendar-outline" label="Calendar" onPress={() => setActiveTab('calendar')} />
           <TabButton active={activeTab === 'insights'} icon="bar-chart-outline" label="Insights" onPress={() => setActiveTab('insights')} />
+          <TabButton active={activeTab === 'plus'} icon="sparkles-outline" label="Plus" onPress={() => setActiveTab('plus')} />
           <TabButton active={activeTab === 'settings'} icon="settings-outline" label="Settings" onPress={() => setActiveTab('settings')} />
         </View>
       </View>
@@ -531,6 +549,7 @@ function HomeScreen({
   symptomCount,
   onLogPeriod,
   onOpenLog,
+  onOpenPlus,
 }: {
   cycle: ReturnType<typeof buildCycleSummary>;
   loggedDays: number;
@@ -541,6 +560,7 @@ function HomeScreen({
   symptomCount: number;
   onLogPeriod: () => void;
   onOpenLog: () => void;
+  onOpenPlus: () => void;
 }) {
   return (
     <View>
@@ -572,6 +592,19 @@ function HomeScreen({
           <Text style={styles.secondaryButtonText}>Log today</Text>
         </Pressable>
       </View>
+
+      {!settings.plusActive && (
+        <Pressable onPress={onOpenPlus} style={styles.plusBanner}>
+          <View style={styles.plusBannerIcon}>
+            <Ionicons name="sparkles-outline" size={22} color="#ffffff" />
+          </View>
+          <View style={styles.plusBannerText}>
+            <Text style={styles.plusBannerTitle}>Try Fertility Tracker Plus</Text>
+            <Text style={styles.plusBannerBody}>Unlock advanced TTC insights, doctor reports, reminders, and cloud backup previews.</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#ffffff" />
+        </Pressable>
+      )}
 
       <SectionTitle label="Cycle Timeline" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayRow}>
@@ -726,7 +759,17 @@ function CalendarScreen({ cycle, settings }: { cycle: ReturnType<typeof buildCyc
   );
 }
 
-function InsightsScreen({ logs, cycle, settings }: { logs: DayLog[]; cycle: ReturnType<typeof buildCycleSummary>; settings: Settings }) {
+function InsightsScreen({
+  logs,
+  cycle,
+  settings,
+  onOpenPlus,
+}: {
+  logs: DayLog[];
+  cycle: ReturnType<typeof buildCycleSummary>;
+  settings: Settings;
+  onOpenPlus: () => void;
+}) {
   const flowDays = logs.filter((log) => log.flow !== 'None').length;
   const intercourseDays = logs.filter((log) => log.intercourse).length;
   const bmi = calculateBmi(settings.heightCm, settings.weightKg);
@@ -751,6 +794,26 @@ function InsightsScreen({ logs, cycle, settings }: { logs: DayLog[]; cycle: Retu
         {careTips.map((tip) => (
           <CareTip key={tip.title} icon={tip.icon} title={tip.title} body={tip.body} />
         ))}
+      </View>
+
+      <SectionTitle label="Plus Insights" />
+      <View style={styles.premiumGrid}>
+        <PremiumFeatureCard
+          active={settings.plusActive}
+          icon="analytics-outline"
+          title="Ovulation confidence"
+          body="Combines LH tests, mucus, BBT, and cycle day into a confidence score."
+          value="82%"
+          onOpenPlus={onOpenPlus}
+        />
+        <PremiumFeatureCard
+          active={settings.plusActive}
+          icon="document-text-outline"
+          title="Doctor report"
+          body="Generate a 3 or 6 month cycle report for appointments."
+          value="PDF"
+          onOpenPlus={onOpenPlus}
+        />
       </View>
 
       <SectionTitle label="Symptoms Trend" />
@@ -813,6 +876,17 @@ function SettingsScreen({
   return (
     <View>
       <Header title="Settings" subtitle="Cycle, reminders, privacy" icon="settings-outline" />
+      <View style={styles.subscriptionPanel}>
+        <View>
+          <Text style={styles.subscriptionLabel}>Subscription</Text>
+          <Text style={styles.subscriptionTitle}>{settings.plusActive ? 'Fertility Tracker Plus' : 'Free plan'}</Text>
+          <Text style={styles.subscriptionBody}>
+            {settings.plusActive ? 'Premium prototype features are unlocked.' : 'Core tracking is free. Plus unlocks advanced reports and insights.'}
+          </Text>
+        </View>
+        <Ionicons name={settings.plusActive ? 'sparkles-outline' : 'leaf-outline'} size={24} color="#316960" />
+      </View>
+
       <View style={styles.formPanel}>
         <Stepper label="Age" value={settings.age} min={18} max={50} suffix="years" onChange={(value) => onUpdate('age', value)} />
         <Stepper label="Trying for" value={settings.tryingMonths} min={0} max={60} suffix="months" onChange={(value) => onUpdate('tryingMonths', value)} />
@@ -909,6 +983,86 @@ function SettingsScreen({
         <Ionicons name="shield-checkmark-outline" size={18} color="#71665f" />
         <Text style={styles.disclaimerText}>
           Predictions are estimates from your logged dates. They are not medical advice and should not be used as the only method for preventing pregnancy.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function PlusScreen({
+  plusActive,
+  onChoosePlan,
+  onRestore,
+}: {
+  plusActive: boolean;
+  onChoosePlan: () => void;
+  onRestore: () => void;
+}) {
+  const premiumFeatures = [
+    {
+      icon: 'analytics-outline' as IconName,
+      title: 'Advanced TTC insights',
+      body: 'Ovulation confidence, cycle regularity, and fertility signal interpretation.',
+    },
+    {
+      icon: 'notifications-outline' as IconName,
+      title: 'Smart reminders',
+      body: 'LH test, BBT, fertile window, prenatal, and period reminders.',
+    },
+    {
+      icon: 'document-text-outline' as IconName,
+      title: 'Doctor-ready reports',
+      body: 'Export cycle, symptom, BBT, and test summaries as appointment reports.',
+    },
+    {
+      icon: 'cloud-upload-outline' as IconName,
+      title: 'Cloud backup preview',
+      body: 'Future-ready backup and restore for switching phones.',
+    },
+  ];
+
+  return (
+    <View>
+      <Header title="Fertility Tracker Plus" subtitle={plusActive ? 'Plus active' : 'Upgrade prototype'} icon="sparkles-outline" />
+      <View style={styles.plusHero}>
+        <Text style={styles.plusHeroLabel}>{plusActive ? 'Active plan' : 'Recommended'}</Text>
+        <Text style={styles.plusHeroTitle}>{plusActive ? 'Plus is unlocked' : 'Plan smarter while trying'}</Text>
+        <Text style={styles.plusHeroBody}>
+          {plusActive
+            ? 'Premium previews are visible across Insights and Reports.'
+            : 'This prototype shows where Apple and Google subscriptions will unlock deeper insights and exports.'}
+        </Text>
+      </View>
+
+      <SectionTitle label="Plans" />
+      <View style={styles.planRow}>
+        <PlanCard label="Monthly" price="$4.99" selected={!plusActive} onPress={onChoosePlan} />
+        <PlanCard label="Yearly" price="$29.99" badge="Best value" selected={plusActive} onPress={onChoosePlan} />
+      </View>
+      <Pressable onPress={onRestore} style={styles.secondaryWideButton}>
+        <Ionicons name="refresh-outline" size={19} color="#316960" />
+        <Text style={styles.secondaryButtonText}>Restore purchases</Text>
+      </Pressable>
+
+      <SectionTitle label="Plus Features" />
+      <View style={styles.formPanel}>
+        {premiumFeatures.map((feature) => (
+          <CareTip key={feature.title} icon={feature.icon} title={feature.title} body={feature.body} />
+        ))}
+      </View>
+
+      <SectionTitle label="Free Includes" />
+      <View style={styles.formPanel}>
+        <CompareRow included label="Cycle tracking and calendar" />
+        <CompareRow included label="Daily logs for flow, mood, symptoms, BBT, mucus, and tests" />
+        <CompareRow included label="PIN and Face ID / biometric privacy lock" />
+        <CompareRow included label="Basic TTC care prompts and BMI category" />
+      </View>
+
+      <View style={styles.disclaimer}>
+        <Ionicons name="information-circle-outline" size={18} color="#71665f" />
+        <Text style={styles.disclaimerText}>
+          Prototype only. Real payments require Apple in-app purchases and Google Play Billing before App Store or Play Store release.
         </Text>
       </View>
     </View>
@@ -1072,6 +1226,71 @@ function CareTip({ body, icon, title }: { body: string; icon: IconName; title: s
   );
 }
 
+function PremiumFeatureCard({
+  active,
+  body,
+  icon,
+  onOpenPlus,
+  title,
+  value,
+}: {
+  active: boolean;
+  body: string;
+  icon: IconName;
+  onOpenPlus: () => void;
+  title: string;
+  value: string;
+}) {
+  return (
+    <Pressable onPress={active ? undefined : onOpenPlus} style={[styles.premiumCard, active && styles.premiumCardActive]}>
+      <View style={styles.premiumHeader}>
+        <Ionicons name={icon} size={21} color={active ? '#316960' : '#7a716b'} />
+        {!active && (
+          <View style={styles.lockPill}>
+            <Ionicons name="lock-closed-outline" size={12} color="#ffffff" />
+            <Text style={styles.lockPillText}>Plus</Text>
+          </View>
+        )}
+      </View>
+      <Text style={styles.premiumValue}>{active ? value : 'Locked'}</Text>
+      <Text style={styles.premiumTitle}>{title}</Text>
+      <Text style={styles.premiumBody}>{body}</Text>
+    </Pressable>
+  );
+}
+
+function PlanCard({
+  badge,
+  label,
+  onPress,
+  price,
+  selected,
+}: {
+  badge?: string;
+  label: string;
+  onPress: () => void;
+  price: string;
+  selected: boolean;
+}) {
+  return (
+    <Pressable onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected]}>
+      {!!badge && <Text style={styles.planBadge}>{badge}</Text>}
+      <Text style={styles.planLabel}>{label}</Text>
+      <Text style={styles.planPrice}>{price}</Text>
+      <Text style={styles.planMeta}>{label === 'Yearly' ? 'Save 50%' : 'Flexible'}</Text>
+    </Pressable>
+  );
+}
+
+function CompareRow({ included, label }: { included: boolean; label: string }) {
+  return (
+    <View style={styles.compareRow}>
+      <Ionicons name={included ? 'checkmark-circle' : 'ellipse-outline'} size={18} color={included ? '#316960' : '#8f8781'} />
+      <Text style={styles.compareText}>{label}</Text>
+    </View>
+  );
+}
+
 function HistoryCard({ log }: { log: DayLog }) {
   return (
     <View style={styles.historyCard}>
@@ -1140,6 +1359,12 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#ffffff', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
   secondaryButton: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#b8d8d2', borderRadius: 8, borderWidth: 1, flex: 1, flexDirection: 'row', gap: 8, height: 48, justifyContent: 'center' },
   secondaryButtonText: { color: '#316960', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
+  secondaryWideButton: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#b8d8d2', borderRadius: 8, borderWidth: 1, flexDirection: 'row', gap: 8, height: 48, justifyContent: 'center', marginTop: 12 },
+  plusBanner: { alignItems: 'center', backgroundColor: '#316960', borderRadius: 8, flexDirection: 'row', gap: 12, marginTop: 14, padding: 14 },
+  plusBannerIcon: { alignItems: 'center', backgroundColor: '#c5534b', borderRadius: 8, height: 42, justifyContent: 'center', width: 42 },
+  plusBannerText: { flex: 1 },
+  plusBannerTitle: { color: '#ffffff', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
+  plusBannerBody: { color: '#e0f0ed', fontSize: 13, lineHeight: 18, marginTop: 3 },
   dangerButton: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#f0b1a5', borderRadius: 8, borderWidth: 1, flexDirection: 'row', gap: 8, height: 50, justifyContent: 'center' },
   dangerButtonText: { color: '#c5534b', fontSize: 16, fontWeight: '800', letterSpacing: 0 },
   lockScreen: { alignItems: 'center', flex: 1, justifyContent: 'center', padding: 24 },
@@ -1162,6 +1387,30 @@ const styles = StyleSheet.create({
   statValue: { color: '#292725', fontSize: 23, fontWeight: '800', letterSpacing: 0, marginTop: 8 },
   statLabel: { color: '#71665f', fontSize: 13, fontWeight: '700', marginTop: 3 },
   formPanel: { backgroundColor: '#ffffff', borderColor: '#eaded6', borderRadius: 8, borderWidth: 1, padding: 14 },
+  subscriptionPanel: { alignItems: 'center', backgroundColor: '#ffffff', borderColor: '#eaded6', borderRadius: 8, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, padding: 14 },
+  subscriptionLabel: { color: '#71665f', fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
+  subscriptionTitle: { color: '#292725', fontSize: 18, fontWeight: '800', letterSpacing: 0, marginTop: 4 },
+  subscriptionBody: { color: '#635a54', fontSize: 13, lineHeight: 18, marginTop: 4, maxWidth: 420 },
+  plusHero: { backgroundColor: '#37312e', borderRadius: 8, padding: 18 },
+  plusHeroLabel: { color: '#f6c9bd', fontSize: 13, fontWeight: '800', letterSpacing: 0, textTransform: 'uppercase' },
+  plusHeroTitle: { color: '#ffffff', fontSize: 28, fontWeight: '800', letterSpacing: 0, marginTop: 6 },
+  plusHeroBody: { color: '#f0e7df', fontSize: 15, lineHeight: 21, marginTop: 8 },
+  planRow: { flexDirection: 'row', gap: 12 },
+  planCard: { backgroundColor: '#ffffff', borderColor: '#eaded6', borderRadius: 8, borderWidth: 1, flex: 1, minHeight: 126, padding: 14 },
+  planCardSelected: { borderColor: '#316960', borderWidth: 2 },
+  planBadge: { alignSelf: 'flex-start', backgroundColor: '#fff0c8', borderRadius: 8, color: '#7a5610', fontSize: 11, fontWeight: '800', marginBottom: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  planLabel: { color: '#71665f', fontSize: 13, fontWeight: '800' },
+  planPrice: { color: '#292725', fontSize: 25, fontWeight: '800', letterSpacing: 0, marginTop: 6 },
+  planMeta: { color: '#316960', fontSize: 13, fontWeight: '800', marginTop: 4 },
+  premiumGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  premiumCard: { backgroundColor: '#ffffff', borderColor: '#eaded6', borderRadius: 8, borderWidth: 1, flexGrow: 1, minHeight: 154, minWidth: '47%', padding: 13 },
+  premiumCardActive: { backgroundColor: '#f7fbfa', borderColor: '#b8d8d2' },
+  premiumHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  premiumValue: { color: '#292725', fontSize: 22, fontWeight: '800', letterSpacing: 0, marginTop: 10 },
+  premiumTitle: { color: '#292725', fontSize: 15, fontWeight: '800', letterSpacing: 0, marginTop: 4 },
+  premiumBody: { color: '#71665f', fontSize: 12, lineHeight: 17, marginTop: 5 },
+  lockPill: { alignItems: 'center', backgroundColor: '#c5534b', borderRadius: 8, flexDirection: 'row', gap: 4, paddingHorizontal: 7, paddingVertical: 4 },
+  lockPillText: { color: '#ffffff', fontSize: 11, fontWeight: '800' },
   inputRowSpaced: { flexDirection: 'row', gap: 12, marginTop: 14 },
   inputGroup: { flex: 1 },
   inputLabel: { color: '#71665f', fontSize: 13, fontWeight: '700', marginBottom: 7 },
@@ -1219,6 +1468,8 @@ const styles = StyleSheet.create({
   careText: { flex: 1 },
   careTitle: { color: '#292725', fontSize: 15, fontWeight: '800', letterSpacing: 0 },
   careBody: { color: '#635a54', fontSize: 13, lineHeight: 18, marginTop: 3 },
+  compareRow: { alignItems: 'center', flexDirection: 'row', gap: 9, minHeight: 36 },
+  compareText: { color: '#4f4843', flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 19 },
   disclaimer: { alignItems: 'flex-start', backgroundColor: '#f2ebe5', borderRadius: 8, flexDirection: 'row', gap: 8, marginTop: 18, padding: 12 },
   disclaimerText: { color: '#635a54', flex: 1, fontSize: 13, lineHeight: 18 },
   emptyState: { color: '#71665f', fontSize: 14, fontWeight: '700', paddingVertical: 10 },

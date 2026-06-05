@@ -59,4 +59,5 @@ npm run submit:android
 - Verify all tabs fit on small phones.
 - Verify Clear local data removes logs and resets settings.
 - Verify no medical claim implies diagnosis, treatment, or contraception reliability.
+- If Plus is enabled for real payments, verify Apple in-app purchases, Google Play Billing, restore purchases, cancellation handling, and store subscription disclosures before release.
 - Verify privacy policy and store data safety answers match the final app behavior.
