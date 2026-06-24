@@ -64,6 +64,6 @@ Based on the current app behavior:
 
 If any networked feature is added later, update the Data safety form before release.
 
-## Subscription Prototype Note
+## Subscription Roadmap Note
 
-The in-app Plus screen is currently a prototype. Do not advertise paid subscriptions in the live store listing until Apple in-app purchases and Google Play Billing are connected and approved.
+The in-app Plus screen is currently a coming soon roadmap. Do not advertise paid subscriptions in the live store listing until Apple in-app purchases and Google Play Billing are connected and approved.

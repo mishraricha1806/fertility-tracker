@@ -11,11 +11,11 @@ A cross-platform Expo app for Android and iOS that helps track menstrual cycles,
 - Settings for age, trying-to-conceive months, height, weight, prenatal/folic acid status, cycle length, period length, luteal phase, reminders, and privacy lock preference.
 - 4 digit PIN lock with Face ID / biometric unlock on supported devices.
 - Clear local data control for user-managed deletion.
-- Product prototype for Free vs Fertility Tracker Plus, including upgrade screen, locked premium insight cards, plan comparison, and simulated restore.
+- Coming soon Plus roadmap, including future premium insight cards, reports, reminders, and backup.
 
 ## Monetization Prototype
 
-The Plus flow is a prototype only. It does not process real payments yet. Before charging users, connect Apple in-app purchases and Google Play Billing directly or through a subscription service such as RevenueCat.
+The Plus flow is a coming soon roadmap only. It does not show prices or process real payments yet. Before charging users, connect Apple in-app purchases and Google Play Billing directly or through a subscription service such as RevenueCat.
 - Local persistence with AsyncStorage so logs and settings survive app restarts.
 
 ## Run

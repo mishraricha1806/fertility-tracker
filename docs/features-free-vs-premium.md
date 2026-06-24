@@ -4,11 +4,11 @@ This document describes the current Free and Premium product experience for Fert
 
 ## Product Positioning
 
-Fertility Tracker is a privacy-focused cycle, ovulation, and trying-to-conceive app. The free version covers essential period and fertility tracking. The premium prototype, Fertility Tracker Plus, demonstrates where paid Apple and Google subscriptions can unlock deeper insights, reporting, reminders, and backup features.
+Fertility Tracker is a privacy-focused cycle, ovulation, and trying-to-conceive app. The first release is free and covers essential period and fertility tracking. Fertility Tracker Plus is shown only as a coming soon roadmap for future deeper insights, reporting, reminders, and backup features.
 
 ## Current Billing Status
 
-The Plus experience is currently a product prototype. It does not process real payments yet.
+The Plus experience is currently a coming soon roadmap. It does not show prices or process real payments yet.
 
 Before charging users, connect Apple In-App Purchases and Google Play Billing directly or through a subscription service such as RevenueCat. Store listings must not claim live paid subscriptions until billing is implemented, tested, and approved.
 
@@ -162,29 +162,21 @@ Current limitations:
 
 ## Premium Plan: Fertility Tracker Plus
 
-Fertility Tracker Plus is the paid tier concept. In the current app, it is a simulated prototype that shows how the paid experience will look.
+Fertility Tracker Plus is a future paid tier concept. In the current app, it is a coming soon roadmap only. It does not show prices, accept payment, unlock simulated purchases, or restore purchases.
 
-Recommended price points:
-
-- Monthly: $4.99
-- Yearly: $29.99
-
-### Plus Upgrade Screen
+### Plus Coming Soon Screen
 
 The Plus screen includes:
 
-- Upgrade headline
-- Monthly plan card
-- Yearly plan card
-- Best value badge
-- Restore purchases button placeholder
+- Coming soon headline
+- Premium roadmap cards
 - Premium feature list
 - Free plan feature list
-- Prototype billing disclaimer
+- Billing availability disclaimer
 
 Purpose:
 
-This screen presents the monetization model clearly before real store billing is connected.
+This screen presents future monetization value without selling subscriptions before real store billing is connected.
 
 ### Advanced TTC Insights
 
@@ -205,7 +197,7 @@ Inputs used:
 
 Current status:
 
-Prototype card exists in Insights. Real scoring logic is not yet production-grade.
+Coming soon card exists in Insights. Real scoring logic is not yet production-grade.
 
 ### Smart Reminders
 
@@ -219,7 +211,7 @@ Premium concept:
 
 Current status:
 
-Prototype feature listed in Plus. Native notification scheduling is not implemented yet.
+Coming soon feature listed in Plus. Native notification scheduling is not implemented yet.
 
 ### Doctor-Ready Reports
 
@@ -236,7 +228,7 @@ Premium concept:
 
 Current status:
 
-Prototype card exists. PDF generation is not implemented yet.
+Coming soon card exists. PDF generation is not implemented yet.
 
 ### Cloud Backup Preview
 
@@ -248,7 +240,7 @@ Premium concept:
 
 Current status:
 
-Prototype feature listed in Plus. Real cloud storage, account login, account deletion, and sync are not implemented yet.
+Coming soon feature listed in Plus. Real cloud storage, account login, account deletion, and sync are not implemented yet.
 
 ### Locked Premium Cards
 
@@ -257,7 +249,7 @@ In Insights, free users see locked cards for:
 - Ovulation confidence
 - Doctor report
 
-When Plus is simulated as active, the cards show premium values instead of locked state.
+The current release keeps these cards in a coming soon state.
 
 Purpose:
 
@@ -265,7 +257,7 @@ This communicates upgrade value without blocking core tracking.
 
 ## Free vs Premium Table
 
-| Feature | Free | Plus Prototype |
+| Feature | Free Release | Plus Roadmap |
 | --- | --- | --- |
 | Cycle dashboard | Yes | Yes |
 | Period logging | Yes | Yes |
@@ -282,11 +274,11 @@ This communicates upgrade value without blocking core tracking.
 | PIN lock | Yes | Yes |
 | Face ID / biometrics | Yes | Yes |
 | Local data deletion | Yes | Yes |
-| Advanced ovulation confidence | Locked preview | Yes, prototype |
-| Doctor PDF report | Locked preview | Yes, prototype |
-| Smart reminder suite | Listed as premium | Yes, prototype |
-| Cloud backup | Listed as premium | Yes, prototype |
-| Restore purchases | Not applicable | Placeholder |
+| Advanced ovulation confidence | Coming soon preview | Planned |
+| Doctor PDF report | Coming soon preview | Planned |
+| Smart reminder suite | Coming soon preview | Planned |
+| Cloud backup | Coming soon preview | Planned |
+| Restore purchases | Not available | Planned after billing |
 | Real payments | No | Not yet |
 
 ## Suggested App Store Description Split
@@ -326,7 +318,7 @@ If real subscriptions are added:
 
 ## Features Not Yet Production-Ready
 
-The following are prototype concepts and need engineering work before being sold:
+The following are future concepts and need engineering work before being sold:
 
 - Real Apple/Google subscription billing
 - RevenueCat or direct billing integration
@@ -358,14 +350,13 @@ Goal:
 
 Get store approval and user feedback with a trustworthy free health app.
 
-### Version 1.1 Monetization Prototype
+### Version 1.1 Premium Roadmap
 
 Add:
 
 - Plus screen
 - Locked premium cards
-- Plan comparison
-- Restore purchases placeholder
+- Coming soon messaging
 
 Goal:
 
